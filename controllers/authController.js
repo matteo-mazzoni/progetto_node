@@ -30,7 +30,7 @@ exports.register = async (req, res, next) => {
       verificationToken
     });
 
-    // Send verification email (optional - can be disabled for testing)
+    // Send verification email
     if (process.env.EMAIL_USER) {
       try {
         const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
