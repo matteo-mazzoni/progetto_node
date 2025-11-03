@@ -232,6 +232,12 @@ router.post('/reports', protect, async (req, res, next) => {
       description
     });
 
+    // Notify admins via WebSocket
+    const wsServer = req.app.get('wsServer');
+    if (wsServer) {
+      wsServer.notifyAdminsOfReport(report, eventExists, req.user);
+    }
+
     res.status(201).json({
       success: true,
       data: report

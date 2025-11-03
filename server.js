@@ -1,10 +1,12 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const WebSocketServer = require('./websocket/WebSocketServer');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -15,8 +17,17 @@ const adminRoutes = require('./routes/adminRoutes');
 // Initialize Express app
 const app = express();
 
+// Create HTTP server
+const server = http.createServer(app);
+
 // Connect to database
 connectDB();
+
+// Initialize WebSocket server
+const wsServer = new WebSocketServer(server);
+
+// Make WebSocket server accessible in routes
+app.set('wsServer', wsServer);
 
 // Security middleware
 app.use(helmet());
@@ -40,6 +51,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (uploaded images)
 app.use('/uploads', express.static('uploads'));
+
+// Serve WebSocket test client
+app.use('/public', express.static('public'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -76,8 +90,9 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`HTTP Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`WebSocket Server running on ws://localhost:${PORT}`);
 });
 
 // Handle unhandled promise rejections

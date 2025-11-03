@@ -1,0 +1,120 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "EventHub API",
+  "dateExported": "2025-11-03",
+  "version": "1.1",
+  "folders": [
+    {
+      "name": "Authentication",
+      "requests": []
+    },
+    {
+      "name": "Events",
+      "requests": []
+    },
+    {
+      "name": "Chat",
+      "requests": []
+    },
+    {
+      "name": "Admin",
+      "requests": []
+    }
+  ],
+  "requests": [
+    {
+      "name": "Register User",
+      "method": "POST",
+      "url": "http://localhost:3000/api/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Mario Rossi\",\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"password123\"\n}"
+      },
+      "folder": "Authentication"
+    },
+    {
+      "name": "Login",
+      "method": "POST",
+      "url": "http://localhost:3000/api/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"mario.rossi@example.com\",\n  \"password\": \"password123\"\n}"
+      },
+      "folder": "Authentication"
+    },
+    {
+      "name": "Get Current User",
+      "method": "GET",
+      "url": "http://localhost:3000/api/auth/me",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        }
+      ],
+      "folder": "Authentication"
+    },
+    {
+      "name": "Get All Events",
+      "method": "GET",
+      "url": "http://localhost:3000/api/events",
+      "folder": "Events"
+    },
+    {
+      "name": "Create Event",
+      "method": "POST",
+      "url": "http://localhost:3000/api/events",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"title\": \"Rock Concert 2025\",\n  \"description\": \"Amazing rock concert with local bands\",\n  \"date\": \"2025-12-15T20:00:00.000Z\",\n  \"location\": \"Milan, Italy\",\n  \"category\": \"music\",\n  \"capacity\": 500\n}"
+      },
+      "folder": "Events"
+    },
+    {
+      "name": "Get My Created Events",
+      "method": "GET",
+      "url": "http://localhost:3000/api/events/my/created",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        }
+      ],
+      "folder": "Events"
+    },
+    {
+      "name": "Register for Event",
+      "method": "POST",
+      "url": "http://localhost:3000/api/events/{{eventId}}/register",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{token}}"
+        }
+      ],
+      "folder": "Events"
+    }
+  ]
+}

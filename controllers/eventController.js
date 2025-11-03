@@ -275,6 +275,12 @@ exports.registerForEvent = async (req, res, next) => {
       type: 'system'
     });
 
+    // Send WebSocket notification
+    const wsServer = req.app.get('wsServer');
+    if (wsServer) {
+      wsServer.notifyEventRegistration(req.params.id, event, req.user);
+    }
+
     res.status(201).json({
       success: true,
       data: registration

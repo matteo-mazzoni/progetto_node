@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EventHub WebSocket Test Client</title>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 EventHub WebSocket Test Client</h1>
+    </div>
+
+    <div class="status">
+      <div class="status-indicator" id="statusIndicator"></div>
+      <span id="statusText">Disconnected</span>
+    </div>
+
+    <div class="main">
+      <div class="sidebar">
+        <h3>Connection</h3>
+        <div class="input-group">
+          <label>JWT Token</label>
+          <input type="text" id="tokenInput" placeholder="Paste your JWT token here">
+        </div>
+        <button onclick="connect()">Connect</button>
+        <button class="btn-secondary" onclick="disconnect()">Disconnect</button>
+
+        <hr style="margin: 20px 0;">
+
+        <h3>Join Event</h3>
+        <div class="input-group">
+          <label>Event ID</label>
+          <input type="text" id="eventIdInput" placeholder="Event ID">
+        </div>
+        <button onclick="joinEvent()">Join Event</button>
+        <button class="btn-secondary" onclick="leaveEvent()">Leave Event</button>
+
+        <hr style="margin: 20px 0;">
+
+        <div id="notifications">
+          <h3>Notifications</h3>
+        </div>
+      </div>
+
+      <div class="chat-area">
+        <div class="messages" id="messages"></div>
+        <div class="typing-indicator" id="typingIndicator"></div>
+        <div class="input-area">
+          <div class="input-group">
+            <label>Message</label>
+            <textarea id="messageInput" placeholder="Type your message..."></textarea>
+          </div>
+          <button onclick="sendMessage()" id="sendBtn" disabled>Send Message</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ws = null;
+    let currentEventId = null;
+    let typingTimer = null;
+
+    function connect() {
+      const token = document.getElementById('tokenInput').value;
+      if (!token) {
+        alert('Please enter a JWT token');
+        return;
+      }
+
+      ws = new WebSocket('ws://localhost:3000');
+
+      ws.onopen = () => {
+        updateStatus('connected', 'Connected');
+        // Authenticate
+        send({ type: 'auth', payload: { token } });
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleMessage(data);
+      };
+
+      ws.onclose = () => {
+        updateStatus('disconnected', 'Disconnected');
+        document.getElementById('sendBtn').disabled = true;
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        addNotification('Connection error', 'error');
+      };
+    }
+
+    function disconnect() {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+    }
+
+    function send(data) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+      }
+    }
+
+    function joinEvent() {
+      const eventId = document.getElementById('eventIdInput').value;
+      if (!eventId) {
+        alert('Please enter an event ID');
+        return;
+      }
+
+      currentEventId = eventId;
+      send({ type: 'join_event', payload: { eventId } });
+    }
+
+    function leaveEvent() {
+      if (currentEventId) {
+        send({ type: 'leave_event', payload: { eventId: currentEventId } });
+        currentEventId = null;
+        document.getElementById('messages').innerHTML = '';
+      }
+    }
+
+    function sendMessage() {
+      const content = document.getElementById('messageInput').value;
+      if (!content || !currentEventId) return;
+
+      send({
+        type: 'chat_message',
+        payload: { eventId: currentEventId, content }
+      });
+
+      document.getElementById('messageInput').value = '';
+    }
+
+    function handleMessage(data) {
+      console.log('Received:', data);
+
+      switch (data.type) {
+        case 'auth_success':
+          addNotification(`Authenticated as ${data.payload.name}`, 'success');
+          break;
+
+        case 'joined_event':
+          addNotification(`Joined event ${data.payload.eventId}`, 'success');
+          document.getElementById('sendBtn').disabled = false;
+          // Display recent messages
+          data.payload.messages.forEach(msg => addMessage(msg));
+          break;
+
+        case 'left_event':
+          addNotification('Left event', 'info');
+          document.getElementById('sendBtn').disabled = true;
+          break;
+
+        case 'new_message':
+          addMessage(data.payload.message);
+          break;
+
+        case 'user_joined':
+          addSystemMessage(`${data.payload.userName} joined the chat`);
+          break;
+
+        case 'user_left':
+          addSystemMessage(`${data.payload.userName} left the chat`);
+          break;
+
+        case 'user_typing':
+          showTyping(data.payload.userName, data.payload.isTyping);
+          break;
+
+        case 'notification':
+          addNotification(JSON.stringify(data.payload), 'info');
+          break;
+
+        case 'error':
+          addNotification(data.payload.message, 'error');
+          break;
+      }
+    }
+
+    function addMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message';
+
+      if (message.type === 'system') {
+        msgDiv.classList.add('system');
+        msgDiv.textContent = message.content;
+      } else {
+        msgDiv.innerHTML = `
+          <div class="message-header">
+            <span class="message-user">${message.user.name}</span>
+            <span>${new Date(message.createdAt).toLocaleTimeString()}</span>
+          </div>
+          <div class="message-content">${message.content}</div>
+        `;
+      }
+
+      messagesDiv.appendChild(msgDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function addSystemMessage(text) {
+      addMessage({
+        type: 'system',
+        content: text,
+        createdAt: new Date()
+      });
+    }
+
+    function addNotification(message, type = 'info') {
+      const notifDiv = document.getElementById('notifications');
+      const div = document.createElement('div');
+      div.className = `notification ${type}`;
+      div.textContent = message;
+      notifDiv.appendChild(div);
+
+      setTimeout(() => div.remove(), 5000);
+    }
+
+    function updateStatus(status, text) {
+      const indicator = document.getElementById('statusIndicator');
+      const statusText = document.getElementById('statusText');
+
+      if (status === 'connected') {
+        indicator.classList.add('connected');
+      } else {
+        indicator.classList.remove('connected');
+      }
+
+      statusText.textContent = text;
+    }
+
+    function showTyping(userName, isTyping) {
+      const indicator = document.getElementById('typingIndicator');
+      if (isTyping) {
+        indicator.textContent = `${userName} is typing...`;
+      } else {
+        indicator.textContent = '';
+      }
+    }
+
+    // Typing indicator
+    document.getElementById('messageInput').addEventListener('input', () => {
+      if (!currentEventId) return;
+
+      clearTimeout(typingTimer);
+      send({ type: 'typing', payload: { eventId: currentEventId, isTyping: true } });
+
+      typingTimer = setTimeout(() => {
+        send({ type: 'typing', payload: { eventId: currentEventId, isTyping: false } });
+      }, 1000);
+    });
+
+    // Send message on Enter
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
