@@ -15,10 +15,11 @@ class WebSocketServer {
   }
 
   async handleConnection(ws, req) {
-    console.log('New WebSocket connection attempt');
+    console.log('New WebSocket connection attempt from:', req.socket.remoteAddress);
 
     ws.on('message', async (message) => {
       try {
+        console.log('Received WebSocket message:', message.toString());
         const data = JSON.parse(message);
         await this.handleMessage(ws, data);
       } catch (error) {
@@ -68,8 +69,10 @@ class WebSocketServer {
   async handleAuth(ws, payload) {
     try {
       const { token } = payload;
+      console.log('WebSocket: Handling authentication...');
 
       if (!token) {
+        console.log('WebSocket: No token provided');
         return this.sendError(ws, 'Token required');
       }
 
@@ -78,10 +81,12 @@ class WebSocketServer {
       const user = await User.findById(decoded.id);
 
       if (!user) {
+        console.log('WebSocket: User not found for token');
         return this.sendError(ws, 'User not found');
       }
 
       if (user.isBlocked) {
+        console.log(`WebSocket: User ${user.name} is blocked`);
         return this.sendError(ws, 'User is blocked');
       }
 
@@ -91,6 +96,7 @@ class WebSocketServer {
       ws.eventRooms = new Set();
 
       this.clients.set(ws.userId, ws);
+      console.log(`WebSocket: User ${user.name} (${ws.userId}) authenticated successfully`);
 
       // Send success response
       this.send(ws, {
@@ -101,9 +107,9 @@ class WebSocketServer {
         }
       });
 
-      console.log(`User ${user.name} authenticated via WebSocket`);
+      console.log(`WebSocket: Auth success message sent to ${user.name}`);
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('WebSocket: Auth error:', error);
       this.sendError(ws, 'Authentication failed');
     }
   }
@@ -111,16 +117,25 @@ class WebSocketServer {
   async handleJoinEvent(ws, payload) {
     try {
       const { eventId } = payload;
+      console.log(`WebSocket: User ${ws.userName} (${ws.userId}) trying to join event ${eventId}`);
 
       if (!ws.userId) {
+        console.log('WebSocket: User not authenticated for join event');
         return this.sendError(ws, 'Not authenticated');
       }
 
       // Check if event exists
+      console.log(`WebSocket: Looking up event ${eventId}...`);
       const event = await Event.findById(eventId);
       if (!event) {
+        console.log(`WebSocket: Event ${eventId} not found`);
         return this.sendError(ws, 'Event not found');
       }
+
+      console.log(`WebSocket: Event found: ${event.title}`);
+      console.log(`WebSocket: Event creator: ${event.creator}`);
+      console.log(`WebSocket: Event participants:`, event.participants);
+      console.log(`WebSocket: User ID: ${ws.userId}`);
 
       // Check if user is participant or creator
       const isParticipant = event.participants.some(
@@ -128,12 +143,22 @@ class WebSocketServer {
       );
       const isCreator = event.creator.toString() === ws.userId;
 
+      console.log(`WebSocket: Is participant: ${isParticipant}`);
+      console.log(`WebSocket: Is creator: ${isCreator}`);
+
+      // Allow read-only access for non-participants
       if (!isParticipant && !isCreator) {
-        return this.sendError(ws, 'Not registered for this event');
+        ws.isReadOnly = true;
+        console.log(`WebSocket: User ${ws.userName} joined event ${eventId} in read-only mode`);
+      } else {
+        ws.isReadOnly = false;
+        console.log(`WebSocket: User ${ws.userName} joined event ${eventId} with full access`);
       }
 
       // Add to event room
       ws.eventRooms.add(eventId);
+      console.log(`WebSocket: Added user ${ws.userName} to event room ${eventId}`);
+      console.log(`WebSocket: User event rooms:`, Array.from(ws.eventRooms));
 
       // Notify others in the room
       this.broadcastToEvent(eventId, {
@@ -151,17 +176,20 @@ class WebSocketServer {
         .sort({ createdAt: -1 })
         .limit(50);
 
+      console.log(`WebSocket: Found ${messages.length} messages for event ${eventId}`);
+
       this.send(ws, {
         type: 'joined_event',
         payload: {
           eventId,
-          messages: messages.toReversed()
+          messages: messages.toReversed(),
+          isReadOnly: ws.isReadOnly
         }
       });
 
-      console.log(`User ${ws.userName} joined event ${eventId}`);
+      console.log(`WebSocket: Join event success message sent to ${ws.userName}`);
     } catch (error) {
-      console.error('Join event error:', error);
+      console.error('WebSocket: Join event error:', error);
       this.sendError(ws, 'Failed to join event');
     }
   }
@@ -201,15 +229,26 @@ class WebSocketServer {
   async handleChatMessage(ws, payload) {
     try {
       const { eventId, content } = payload;
+      console.log(`WebSocket: Handling chat message from ${ws.userName} for event ${eventId}`);
+      console.log(`WebSocket: Message content: "${content}"`);
 
       if (!ws.userId) {
+        console.log('WebSocket: User not authenticated');
         return this.sendError(ws, 'Not authenticated');
       }
 
       if (!ws.eventRooms.has(eventId)) {
+        console.log(`WebSocket: User ${ws.userName} not in event room ${eventId}`);
         return this.sendError(ws, 'Not in this event room');
       }
 
+      // Check if user is in read-only mode
+      if (ws.isReadOnly) {
+        console.log(`WebSocket: User ${ws.userName} is in read-only mode`);
+        return this.sendError(ws, 'You must register for this event to send messages');
+      }
+
+      console.log('WebSocket: Saving message to database...');
       // Save message to database
       const message = await Message.create({
         event: eventId,
@@ -217,11 +256,14 @@ class WebSocketServer {
         content,
         type: 'text'
       });
+      console.log('WebSocket: Message saved with ID:', message._id);
 
       const populatedMessage = await Message.findById(message._id)
         .populate('user', 'name avatar');
+      console.log('WebSocket: Populated message:', populatedMessage);
 
-      // Broadcast to all users in the event room
+      // Broadcast to all users in the event room (including sender)
+      console.log('WebSocket: Broadcasting message to event room...');
       this.broadcastToEvent(eventId, {
         type: 'new_message',
         payload: {
@@ -230,9 +272,9 @@ class WebSocketServer {
         }
       });
 
-      console.log(`Message sent in event ${eventId} by ${ws.userName}`);
+      console.log(`WebSocket: Message broadcast completed for event ${eventId}`);
     } catch (error) {
-      console.error('Chat message error:', error);
+      console.error('WebSocket: Chat message error:', error);
       this.sendError(ws, 'Failed to send message');
     }
   }
@@ -295,15 +337,24 @@ class WebSocketServer {
 
   // Broadcast to all users in an event room
   broadcastToEvent(eventId, message, excludeUserId = null) {
+    console.log(`WebSocket: Broadcasting to event ${eventId}, excluding user: ${excludeUserId}`);
+    let sentCount = 0;
+    
     this.clients.forEach((client, userId) => {
+      console.log(`WebSocket: Checking client ${userId}, readyState: ${client.readyState}, has eventRoom: ${client.eventRooms?.has(eventId)}`);
+      
       if (
         client.readyState === WebSocket.OPEN &&
         client.eventRooms?.has(eventId) &&
         userId !== excludeUserId
       ) {
         this.send(client, message);
+        sentCount++;
+        console.log(`WebSocket: Message sent to user ${userId}`);
       }
     });
+    
+    console.log(`WebSocket: Broadcast completed, sent to ${sentCount} clients`);
   }
 
   // Broadcast to all connected users

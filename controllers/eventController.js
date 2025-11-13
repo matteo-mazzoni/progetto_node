@@ -1,6 +1,37 @@
 const Event = require('../models/Event');
 const Registration = require('../models/Registration');
 const Message = require('../models/Message');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
+
+// Helper function to optimize uploaded images
+async function optimizeImage(filePath) {
+  try {
+    const filename = path.basename(filePath);
+    const outputPath = path.join(path.dirname(filePath), `optimized-${filename}`);
+    
+    await sharp(filePath)
+      .resize(1200, 800, { 
+        fit: 'inside',
+        withoutEnlargement: true // Don't upscale small images
+      })
+      .jpeg({ 
+        quality: 85,
+        progressive: true
+      })
+      .toFile(outputPath);
+    
+    // Delete original file
+    fs.unlinkSync(filePath);
+    
+    return `optimized-${filename}`;
+  } catch (error) {
+    console.error('Image optimization error:', error);
+    // If optimization fails, return original filename
+    return path.basename(filePath);
+  }
+}
 
 // @desc    Get all events (public catalog)
 // @route   GET /api/events
@@ -86,7 +117,8 @@ exports.createEvent = async (req, res, next) => {
 
     // Add image if uploaded
     if (req.file) {
-      req.body.image = `/uploads/${req.file.filename}`;
+      const optimizedFilename = await optimizeImage(req.file.path);
+      req.body.image = `/uploads/${optimizedFilename}`;
     }
 
     const event = await Event.create(req.body);
@@ -124,7 +156,8 @@ exports.updateEvent = async (req, res, next) => {
 
     // Add image if uploaded
     if (req.file) {
-      req.body.image = `/uploads/${req.file.filename}`;
+      const optimizedFilename = await optimizeImage(req.file.path);
+      req.body.image = `/uploads/${optimizedFilename}`;
     }
 
     event = await Event.findByIdAndUpdate(req.params.id, req.body, {

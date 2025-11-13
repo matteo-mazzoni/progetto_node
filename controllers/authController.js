@@ -8,11 +8,13 @@ const { sendPasswordResetEmail, sendVerificationEmail } = require('../utils/emai
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
+    console.log('Register request received:', req.body);
     const { name, email, password } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
+      console.log('User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User already exists'
@@ -23,6 +25,7 @@ exports.register = async (req, res, next) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
     // Create user
+    console.log('Creating user...');
     const user = await User.create({
       name,
       email,
@@ -30,18 +33,26 @@ exports.register = async (req, res, next) => {
       verificationToken
     });
 
+    console.log('User created successfully:', user._id);
+
     // Send verification email
-    if (process.env.EMAIL_USER) {
+    if (process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_email@gmail.com') {
       try {
         const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         await sendVerificationEmail(email, verificationToken, verificationUrl);
+        console.log('Verification email sent successfully');
       } catch (error) {
-        console.error('Error sending verification email:', error);
+        console.error('Error sending verification email (continuing anyway):', error.message);
+        // Non bloccare la registrazione se l'email fallisce
       }
+    } else {
+      console.log('Email not configured, skipping verification email');
     }
 
+    console.log('Sending token response...');
     sendTokenResponse(user, 201, res);
   } catch (error) {
+    console.error('Registration error:', error);
     next(error);
   }
 };

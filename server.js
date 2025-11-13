@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
+const http = require('node:http');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -15,13 +15,16 @@ const chatRoutes = require('./routes/chatRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 // Initialize Express app
-const app = express();
+const app = express(); 
 
 // Create HTTP server
 const server = http.createServer(app);
 
 // Connect to database
-connectDB();
+connectDB().catch(err => {
+  console.error('Database connection failed:', err.message);
+  console.log('Server starting without database connection...');
+});
 
 // Initialize WebSocket server
 const wsServer = new WebSocketServer(server);
@@ -41,7 +44,11 @@ app.use('/api', limiter);
 
 // CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: [
+    'http://localhost:3001',
+    'http://localhost:5173',
+    process.env.CLIENT_URL
+  ].filter(Boolean),
   credentials: true
 }));
 
@@ -52,8 +59,17 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (uploaded images)
 app.use('/uploads', express.static('uploads'));
 
+// Serve HTML frontend
+app.use('/html', express.static('public/html'));
+
 // Serve WebSocket test client
 app.use('/public', express.static('public'));
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -63,12 +79,6 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/admin', adminRoutes);
 
 // Root route
 app.get('/', (req, res) => {
