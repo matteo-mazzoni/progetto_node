@@ -5,10 +5,11 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
   line-height: 1.6;
-  color: #333;
-  background-color: #f8f9fa;
+  color: #2d3748;
+  background: linear-gradient(135deg, #dbeafe 0%, #fed7aa 100%);
+  min-height: 100vh;
 }
 
 .container {
@@ -20,42 +21,47 @@ body {
 .btn {
   display: inline-block;
   padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
+  background-color: #fdba74;
+  color: #7c2d12;
   text-decoration: none;
-  border-radius: 5px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   font-size: 16px;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: #fb923c;
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
-  background-color: #6c757d;
+  background-color: #93c5fd;
+  color: #1e3a8a;
 }
 
 .btn-secondary:hover {
-  background-color: #545b62;
+  background-color: #60a5fa;
 }
 
 .btn-danger {
-  background-color: #dc3545;
+  background-color: #fca5a5;
+  color: #7f1d1d;
 }
 
 .btn-danger:hover {
-  background-color: #c82333;
+  background-color: #f87171;
 }
 
 .card {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(147, 197, 253, 0.3);
 }
 
 .form-group {
@@ -65,7 +71,8 @@ body {
 .form-group label {
   display: block;
   margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 600;
+  color: #60a5fa;
 }
 
 .form-group input,
@@ -73,15 +80,25 @@ body {
 .form-group select {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 2px solid #e0e7ff;
+  border-radius: 8px;
   font-size: 16px;
+  transition: border-color 0.3s;
+  background-color: #fefefe;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #fdba74;
 }
 
 .navbar {
-  background-color: #343a40;
-  color: white;
+  background: linear-gradient(90deg, #bfdbfe 0%, #fcd34d 100%);
+  color: #1e3a8a;
   padding: 1rem 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .nav-content {
@@ -93,6 +110,7 @@ body {
 .nav-brand {
   font-size: 1.5rem;
   font-weight: bold;
+  color: #1e40af;
 }
 
 .nav-links {
@@ -101,14 +119,16 @@ body {
 }
 
 .nav-link {
-  color: white;
+  color: #1e40af;
   text-decoration: none;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s;
 }
 
 .nav-link:hover {
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(253, 186, 116, 0.5);
+  transform: translateY(-2px);
 }
 
 .grid {
@@ -123,7 +143,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(191, 219, 254, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -132,12 +153,13 @@ body {
 
 .modal {
   background: white;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
@@ -145,25 +167,29 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #fdba74;
 }
 
 .loading {
   text-align: center;
-  padding: 20px;
+  padding: 40px;
+  color: #1e40af;
+  font-size: 18px;
 }
 
 .error {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 10px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  color: #7f1d1d;
+  padding: 12px;
+  border-radius: 10px;
   margin-bottom: 15px;
 }
 
 .success {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 10px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+  color: #14532d;
+  padding: 12px;
+  border-radius: 10px;
   margin-bottom: 15px;
 }

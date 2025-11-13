@@ -242,7 +242,10 @@ exports.getRegisteredEvents = async (req, res, next) => {
       }
     });
 
-    const events = registrations.map(reg => reg.event);
+    // Filtra eventi eliminati (null)
+    const events = registrations
+      .map(reg => reg.event)
+      .filter(event => event !== null);
 
     res.status(200).json({
       success: true,

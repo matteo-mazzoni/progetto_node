@@ -4,7 +4,7 @@ import { eventService } from '../services/eventService'
 function Profile({ user }) {
   const [myEvents, setMyEvents] = useState([])
   const [myRegistrations, setMyRegistrations] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
 
   useEffect(() => {
@@ -20,6 +20,7 @@ function Profile({ user }) {
         eventService.getMyEvents(),
         eventService.getMyRegistrations()
       ])
+      console.log('Registered events:', registeredEvents)
       setMyEvents(createdEvents)
       setMyRegistrations(registeredEvents)
     } catch (error) {
@@ -38,47 +39,35 @@ function Profile({ user }) {
       <h1>Il Mio Profilo</h1>
       
       {/* Tab Navigation */}
-      <div style={{ marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
+      <div style={{ marginBottom: '20px', borderBottom: '2px solid #e0e7ff' }}>
         <button 
-          className={`tab-button ${activeTab === 'info' ? 'active' : ''}`}
+          className="btn btn-secondary"
           onClick={() => setActiveTab('info')}
           style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'info' ? '#007bff' : 'transparent',
-            color: activeTab === 'info' ? 'white' : '#007bff',
-            cursor: 'pointer',
             marginRight: '10px',
-            borderRadius: '4px 4px 0 0'
+            marginBottom: '10px',
+            opacity: activeTab === 'info' ? 1 : 0.6
           }}
         >
           Informazioni
         </button>
         <button 
-          className={`tab-button ${activeTab === 'created' ? 'active' : ''}`}
+          className="btn btn-secondary"
           onClick={() => setActiveTab('created')}
           style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'created' ? '#007bff' : 'transparent',
-            color: activeTab === 'created' ? 'white' : '#007bff',
-            cursor: 'pointer',
             marginRight: '10px',
-            borderRadius: '4px 4px 0 0'
+            marginBottom: '10px',
+            opacity: activeTab === 'created' ? 1 : 0.6
           }}
         >
           Miei Eventi ({myEvents.length})
         </button>
         <button 
-          className={`tab-button ${activeTab === 'registered' ? 'active' : ''}`}
+          className="btn btn-secondary"
           onClick={() => setActiveTab('registered')}
           style={{
-            padding: '10px 20px',
-            border: 'none',
-            background: activeTab === 'registered' ? '#007bff' : 'transparent',
-            color: activeTab === 'registered' ? 'white' : '#007bff',
-            cursor: 'pointer',
-            borderRadius: '4px 4px 0 0'
+            marginBottom: '10px',
+            opacity: activeTab === 'registered' ? 1 : 0.6
           }}
         >
           Iscrizioni ({myRegistrations.length})
@@ -110,25 +99,19 @@ function Profile({ user }) {
           {loading ? (
             <div className="loading">Caricamento...</div>
           ) : myEvents.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#666' }}>
+            <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
               Non hai ancora creato nessun evento.
             </p>
           ) : (
             <div className="events-list">
               {myEvents.map(event => (
-                <div key={event._id} className="event-item" style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  marginBottom: '15px',
-                  background: '#f8f9fa'
-                }}>
-                  <h3>{event.title}</h3>
+                <div key={event._id} className="card" style={{ marginBottom: '15px' }}>
+                  <h3 style={{ color: '#1e40af', marginBottom: '10px' }}>{event.title}</h3>
                   <p><strong>Categoria:</strong> {event.category}</p>
                   <p><strong>Data:</strong> {new Date(event.date).toLocaleDateString()}</p>
                   <p><strong>Luogo:</strong> {event.location}</p>
                   <p><strong>Partecipanti:</strong> {event.participants?.length || 0}/{event.capacity}</p>
-                  <p>{event.description}</p>
+                  <p style={{ marginTop: '10px' }}>{event.description}</p>
                 </div>
               ))}
             </div>
@@ -137,31 +120,30 @@ function Profile({ user }) {
       )}
 
       {activeTab === 'registered' && (
-        <div className="card">
-          <h2>Le Mie Iscrizioni</h2>
+        <div className="card" style={{ minHeight: '200px' }}>
+          <h2 style={{ marginBottom: '20px' }}>Le Mie Iscrizioni</h2>
           {loading ? (
-            <div className="loading">Caricamento...</div>
+            <div style={{ textAlign: 'center', padding: '40px', fontSize: '18px' }}>
+              Caricamento...
+            </div>
           ) : myRegistrations.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#666' }}>
+            <p style={{ textAlign: 'center', color: '#666', padding: '40px', fontSize: '16px' }}>
               Non sei iscritto a nessun evento.
             </p>
           ) : (
             <div className="events-list">
-              {myRegistrations.map(event => (
-                <div key={event._id} className="event-item" style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '15px',
+              {myRegistrations.map(event => event && (
+                <div key={event._id} className="card" style={{ 
                   marginBottom: '15px',
-                  background: '#e8f4f8'
+                  backgroundColor: 'rgba(191, 219, 254, 0.2)'
                 }}>
-                  <h3>{event.title}</h3>
+                  <h3 style={{ color: '#1e40af', marginBottom: '10px' }}>{event.title}</h3>
                   <p><strong>Categoria:</strong> {event.category}</p>
                   <p><strong>Data:</strong> {new Date(event.date).toLocaleDateString()}</p>
                   <p><strong>Luogo:</strong> {event.location}</p>
                   <p><strong>Organizzatore:</strong> {event.creator?.name || 'N/A'}</p>
                   <p><strong>Partecipanti:</strong> {event.participants?.length || 0}/{event.capacity}</p>
-                  <p>{event.description}</p>
+                  <p style={{ marginTop: '10px' }}>{event.description}</p>
                 </div>
               ))}
             </div>
